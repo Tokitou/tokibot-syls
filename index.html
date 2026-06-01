@@ -40,7 +40,6 @@
     .hero-meta { display:flex; align-items:baseline; gap:40px; }
     .hero-count { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
     .hero-count em { display:block; font-size:36px; font-weight:300; font-style:italic; letter-spacing:-.02em; color:var(--vi2); margin-bottom:4px; }
-    .hero-hint { font-size:11px; letter-spacing:.06em; color:var(--muted); }
 
     .search {
       border-bottom:1px solid var(--line);
@@ -80,16 +79,14 @@
 
     #panel { display:none; border-bottom:1px solid var(--line); }
     .panel-in {
-      padding:36px 0; display:grid;
-      grid-template-columns:160px 1fr; gap:0 40px; align-items:start;
+      padding:24px 0; display:flex; align-items:flex-start; gap:16px;
     }
-    .p-left { padding-right:40px; border-right:1px solid var(--line); }
-    .p-tag  { font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
-    .p-syl  { font-size:36px; font-weight:500; font-style:italic; color:var(--vi2); line-height:1; margin-bottom:24px; }
+    .panel-in #p-body { flex:1; }
     .p-close {
       background:none; border:1px solid var(--line); cursor:pointer;
-      font-family:var(--f); font-size:10px; letter-spacing:.12em; text-transform:uppercase;
-      color:var(--muted); padding:6px 12px; transition:color .15s, border-color .15s;
+      font-family:var(--f); font-size:11px;
+      color:var(--muted); padding:5px 9px; transition:color .15s, border-color .15s;
+      flex-shrink:0;
     }
     .p-close:hover { color:var(--text); border-color:var(--muted); }
 
@@ -103,14 +100,6 @@
 
     .err { font-size:11px; letter-spacing:.06em; color:var(--muted); }
 
-    footer {
-      margin-top:64px; border-top:1px solid var(--line); padding-top:20px;
-      display:flex; justify-content:space-between;
-      opacity:0; animation:up .5s .28s ease forwards;
-    }
-    footer span, footer a { font-size:10px; letter-spacing:.1em; color:var(--muted); text-decoration:none; }
-    footer strong { color:var(--vi2); font-weight:400; }
-    footer a:hover { color:var(--text); }
 
     .empty { padding:80px 0; border-top:1px solid var(--line); }
     .empty p { font-size:11px; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
@@ -124,7 +113,6 @@
       .grid { grid-template-columns:repeat(3,1fr); }
       .hero-nick { font-size:52px; }
       .panel-in { grid-template-columns:1fr; gap:24px; }
-      .p-left { border-right:none; border-bottom:1px solid var(--line); padding-right:0; padding-bottom:24px; }
     }
   </style>
 </head>
@@ -135,10 +123,6 @@
     <span class="h-lang" id="lang-badge">FR</span>
   </header>
   <div id="root"></div>
-  <footer>
-    <span>Propulsé par <strong>TokiBot</strong></span>
-    <a href="https://jklm.fun" target="_blank" rel="noopener">jklm.fun ↗</a>
-  </footer>
 </div>
 <script>
 (function(){
@@ -174,7 +158,6 @@
       <div class="hero-nick">${esc(nick||'—')}</div>
       <div class="hero-meta">
         <div class="hero-count"><em>${syls.length}</em>syllabe${syls.length>1?'s':''} ratée${syls.length>1?'s':''}</div>
-        <span class="hero-hint">Cliquer sur une syllabe pour voir des mots</span>
       </div>
     </div>
     <div class="search"><input id="srch" type="text" placeholder="Filtrer…" autocomplete="off" spellcheck="false"/></div>
@@ -189,12 +172,8 @@
       </div>
       <div id="panel">
         <div class="panel-in">
-          <div class="p-left">
-            <div class="p-tag">Mots contenant</div>
-            <div class="p-syl" id="p-syl"></div>
-            <button class="p-close" id="p-close">Fermer ✕</button>
-          </div>
           <div id="p-body"></div>
+          <button class="p-close" id="p-close">✕</button>
         </div>
       </div>
     </div>`;

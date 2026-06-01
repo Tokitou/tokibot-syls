@@ -253,13 +253,64 @@
     }</div>`;
   }
 
-  async function fetchWords(syl,lang){
-    if(!apiBase) throw new Error('apibase non défini');
-    // Appelle /words sur le panel TokiBot (port 9999), qui proxifie vers le dict server (7777)
-    const r = await fetch(`${apiBase}/words?syl=${encodeURIComponent(syl.toLowerCase())}&lang=${encodeURIComponent(lang)}&limit=15`);
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const d = await r.json();
-    return d.words||[];
+  // ── Stratégie de récupération des mots ──────────────────────────────────
+  // 1. Essaie le panel TokiBot local (apibase) si dispo
+  // 2. Sinon, appelle l'API Anthropic directement (Claude)
+  async function fetchWords(syl, lang) {
+    // Tentative 1 : serveur TokiBot local
+    if (apiBase) {
+      try {
+        const r = await fetch(
+          `${apiBase}/words?syl=${encodeURIComponent(syl.toLowerCase())}&lang=${encodeURIComponent(lang)}&limit=15`,
+          { signal: AbortSignal.timeout(3000) }
+        );
+        if (r.ok) {
+          const d = await r.json();
+          if (d.words && d.words.length > 0) return d.words;
+        }
+      } catch (_) { /* panel indispo, on passe au fallback */ }
+    }
+
+    // Tentative 2 : API Anthropic (Claude)
+    return fetchWordsFromClaude(syl, lang);
+  }
+
+  async function fetchWordsFromClaude(syl, lang) {
+    const langNames = {
+      fr: 'français', en: 'anglais', de: 'allemand', es: 'espagnol',
+      it: 'italien', na: 'nahuatl', po: 'portugais brésilien', br: 'breton', ba: 'basque'
+    };
+    const langName = langNames[lang] || lang;
+
+    const prompt = `Liste exactement 5 mots en ${langName} qui contiennent la syllabe "${syl.toLowerCase()}". 
+Règles strictes :
+- Chaque mot DOIT contenir la chaîne de lettres "${syl.toLowerCase()}" (en minuscules)
+- Mots courants, simples, faciles à retenir pour un joueur de BombParty
+- Répondre UNIQUEMENT avec les 5 mots séparés par des virgules, sans ponctuation ni explication
+- Format exact : mot1,mot2,mot3,mot4,mot5`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 100,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) throw new Error('API Anthropic ' + response.status);
+    const data = await response.json();
+    const text = data.content?.[0]?.text?.trim() || '';
+
+    // Parser la réponse : "mot1,mot2,mot3,mot4,mot5"
+    const words = text
+      .split(/[,\n]+/)
+      .map(w => w.trim().toLowerCase().replace(/[^a-záàâäéèêëîïôöùûüçœæ'-]/gi, ''))
+      .filter(w => w.length >= 2 && w.includes(syl.toLowerCase()));
+
+    if (words.length === 0) throw new Error('Aucun mot valide retourné');
+    return words;
   }
 
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}

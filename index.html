@@ -9,443 +9,597 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg:        #0a090f;
-      --bg2:       #110f1a;
-      --bg3:       #1a1726;
-      --border:    #2a2440;
-      --violet:    #7c5cbf;
-      --violet-2:  #9b7de0;
-      --violet-glow: rgba(124, 92, 191, 0.18);
-      --accent:    #c4a6ff;
-      --text:      #e8e2f5;
-      --muted:     #7a7090;
-      --danger:    #e05c8a;
-      --success:   #5ce0a0;
-      --mono:      'DM Mono', monospace;
-      --sans:      'Syne', sans-serif;
+      --bg:       #080710;
+      --bg2:      #0f0d1c;
+      --bg3:      #17142a;
+      --border:   #221e38;
+      --border2:  #2e2850;
+      --vi:       #7c5cbf;
+      --vi2:      #a07ee8;
+      --vi3:      #c4a6ff;
+      --glow:     rgba(124,92,191,0.15);
+      --text:     #ede8ff;
+      --muted:    #6b6385;
+      --danger:   #e05c8a;
+      --mono:     'DM Mono', monospace;
+      --sans:     'Syne', sans-serif;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
 
-    html, body {
+    html { scroll-behavior: smooth; }
+
+    body {
       background: var(--bg);
       color: var(--text);
       font-family: var(--sans);
       min-height: 100vh;
-      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Noise texture overlay ── */
+    /* ── Grain ── */
     body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      background-size: 200px;
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.5;
+      content:'';
+      position:fixed; inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      background-size:300px;
+      pointer-events:none; z-index:0;
     }
 
-    /* ── Ambient glow bg ── */
-    body::after {
-      content: '';
-      position: fixed;
-      top: -20vh;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 80vw;
-      height: 60vh;
-      background: radial-gradient(ellipse at center, rgba(124,92,191,0.12) 0%, transparent 70%);
-      pointer-events: none;
-      z-index: 0;
+    /* ── Radial glow ── */
+    .bg-glow {
+      position:fixed; pointer-events:none; z-index:0;
+      border-radius:50%; filter:blur(80px); opacity:0.6;
+    }
+    .bg-glow-1 {
+      width:500px; height:400px;
+      top:-100px; left:50%; transform:translateX(-50%);
+      background: radial-gradient(ellipse, rgba(100,60,180,0.18) 0%, transparent 70%);
+    }
+    .bg-glow-2 {
+      width:300px; height:300px;
+      bottom:5%; right:5%;
+      background: radial-gradient(ellipse, rgba(80,40,160,0.1) 0%, transparent 70%);
     }
 
+    /* ── Layout ── */
     .page {
-      position: relative;
-      z-index: 1;
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 48px 24px 80px;
+      position:relative; z-index:1;
+      max-width:820px;
+      margin:0 auto;
+      padding:52px 28px 96px;
     }
 
-    /* ── Header ── */
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 48px;
-      opacity: 0;
-      animation: fadeUp 0.5s ease forwards;
+    /* ── Topbar ── */
+    .topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:60px;
+      opacity:0; animation: up 0.5s ease forwards;
     }
 
-    .logo {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, var(--violet), var(--violet-2));
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      flex-shrink: 0;
-      box-shadow: 0 0 16px var(--violet-glow);
+    .brand {
+      display:flex; align-items:center; gap:10px;
     }
 
-    .header-text h1 {
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
+    .brand-icon {
+      width:30px; height:30px;
+      background: linear-gradient(135deg, var(--vi), var(--vi2));
+      border-radius:7px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px;
+      box-shadow: 0 0 20px rgba(124,92,191,0.3);
     }
 
-    .header-text span {
-      font-size: 11px;
+    .brand-name {
       font-family: var(--mono);
+      font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
       color: var(--muted);
-      opacity: 0.6;
     }
 
-    /* ── Hero section ── */
+    .lang-badge {
+      font-family: var(--mono);
+      font-size:10px; letter-spacing:0.1em; text-transform:uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius:4px; padding:3px 8px;
+    }
+
+    /* ── Hero ── */
     .hero {
-      margin-bottom: 40px;
-      opacity: 0;
-      animation: fadeUp 0.5s 0.1s ease forwards;
+      margin-bottom:52px;
+      opacity:0; animation: up 0.5s 0.08s ease forwards;
     }
 
-    .hero-label {
+    .eyebrow {
       font-family: var(--mono);
-      font-size: 11px;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--violet-2);
-      margin-bottom: 10px;
+      font-size:10px; letter-spacing:0.18em; text-transform:uppercase;
+      color: var(--vi2);
+      margin-bottom:12px;
     }
 
     .player-name {
-      font-size: clamp(28px, 6vw, 48px);
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      line-height: 1;
-      background: linear-gradient(135deg, var(--text) 40%, var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 16px;
+      font-size:clamp(36px,8vw,64px);
+      font-weight:800; letter-spacing:-0.03em; line-height:0.95;
+      margin-bottom:22px;
+      position:relative; display:inline-block;
     }
 
-    .stats-row {
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      flex-wrap: wrap;
+    .player-name .name-text {
+      background: linear-gradient(115deg, var(--text) 30%, var(--vi3) 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      background-clip:text;
     }
 
-    .stat-pill {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 6px 14px;
-      font-family: var(--mono);
-      font-size: 12px;
+    /* underline accent */
+    .player-name::after {
+      content:'';
+      position:absolute; bottom:-6px; left:0;
+      width:40%; height:2px;
+      background: linear-gradient(90deg, var(--vi), transparent);
+      border-radius:2px;
     }
 
-    .stat-pill .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--danger);
-      flex-shrink: 0;
+    .meta-row {
+      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+      margin-top:18px;
     }
 
-    .stat-pill .count {
-      color: var(--accent);
-      font-weight: 500;
+    .chip {
+      display:inline-flex; align-items:center; gap:7px;
+      border:1px solid var(--border2); border-radius:100px;
+      padding:5px 14px;
+      font-family:var(--mono); font-size:11px;
     }
 
-    /* ── Search bar ── */
+    .chip-dot {
+      width:5px; height:5px; border-radius:50%;
+      background:var(--danger); flex-shrink:0;
+      box-shadow:0 0 6px rgba(224,92,138,0.5);
+    }
+
+    .chip-num { color:var(--vi3); font-weight:500; }
+
+    .hint-text {
+      font-family:var(--mono); font-size:11px; color:var(--muted);
+      letter-spacing:0.04em;
+    }
+
+    /* ── Search ── */
     .search-wrap {
-      margin-bottom: 28px;
-      opacity: 0;
-      animation: fadeUp 0.5s 0.2s ease forwards;
+      margin-bottom:24px;
+      opacity:0; animation: up 0.5s 0.16s ease forwards;
+      position:relative;
+    }
+
+    .search-wrap::before {
+      content:'⌕';
+      position:absolute; left:14px; top:50%; transform:translateY(-50%);
+      color:var(--muted); font-size:16px; pointer-events:none;
+      font-family:var(--mono);
     }
 
     .search-wrap input {
-      width: 100%;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-family: var(--mono);
-      font-size: 13px;
-      color: var(--text);
-      outline: none;
+      width:100%;
+      background:var(--bg2);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:11px 16px 11px 38px;
+      font-family:var(--mono); font-size:12px; letter-spacing:0.06em;
+      color:var(--text); outline:none;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-
     .search-wrap input:focus {
-      border-color: var(--violet);
-      box-shadow: 0 0 0 3px var(--violet-glow);
+      border-color:var(--vi);
+      box-shadow:0 0 0 3px var(--glow);
     }
-
-    .search-wrap input::placeholder { color: var(--muted); }
+    .search-wrap input::placeholder { color:var(--muted); }
 
     /* ── Grid ── */
+    .grid-wrap {
+      opacity:0; animation: up 0.5s 0.22s ease forwards;
+    }
+
     .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-      gap: 10px;
-      opacity: 0;
-      animation: fadeUp 0.5s 0.3s ease forwards;
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap:8px;
     }
 
+    /* ── Syllable card ── */
     .syl-card {
-      position: relative;
-      background: var(--bg2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px 10px;
-      text-align: center;
-      cursor: default;
-      transition: border-color 0.15s, background 0.15s, transform 0.15s;
-      overflow: hidden;
+      position:relative;
+      background:var(--bg2);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:18px 10px 14px;
+      text-align:center;
+      cursor:pointer;
+      transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
+      opacity:0;
+      animation: up 0.35s ease forwards;
+      user-select:none;
+      overflow:hidden;
     }
 
-    .syl-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, transparent 60%, rgba(124,92,191,0.08));
-      pointer-events: none;
+    .syl-card::after {
+      content:'';
+      position:absolute; inset:0;
+      background:linear-gradient(135deg, transparent 40%, rgba(124,92,191,0.06));
+      pointer-events:none;
     }
 
     .syl-card:hover {
-      border-color: var(--violet);
-      background: var(--bg3);
-      transform: translateY(-2px);
+      border-color:var(--vi2);
+      background:var(--bg3);
+      transform:translateY(-3px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(124,92,191,0.2);
     }
 
-    .syl-card .syl-text {
-      font-family: var(--mono);
-      font-size: 18px;
-      font-weight: 500;
-      letter-spacing: 0.06em;
-      color: var(--text);
-      text-transform: uppercase;
+    .syl-card.active {
+      border-color:var(--vi);
+      background:var(--bg3);
+      box-shadow: 0 0 0 1px var(--vi), 0 8px 32px rgba(124,92,191,0.2);
     }
 
-    .syl-card .syl-len {
-      font-family: var(--mono);
-      font-size: 9px;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-top: 4px;
-      text-transform: uppercase;
+    .syl-card.hidden { display:none; }
+
+    .syl-text {
+      font-family:var(--mono); font-size:20px; font-weight:500;
+      letter-spacing:0.08em; text-transform:uppercase;
+      color:var(--text);
+      display:block; margin-bottom:4px;
     }
 
-    .syl-card.hidden { display: none; }
-
-    /* ── Empty / error states ── */
-    .state-box {
-      text-align: center;
-      padding: 64px 24px;
-      color: var(--muted);
-      font-family: var(--mono);
-      font-size: 13px;
-      line-height: 1.8;
+    .syl-len {
+      font-family:var(--mono); font-size:9px; letter-spacing:0.12em;
+      text-transform:uppercase; color:var(--muted);
     }
 
-    .state-box .icon {
-      font-size: 36px;
-      margin-bottom: 16px;
-      display: block;
-      opacity: 0.5;
+    /* ── Words panel (below grid) ── */
+    #words-panel {
+      margin-top:16px;
+      display:none;
     }
 
-    .state-box strong {
-      display: block;
-      font-size: 15px;
-      color: var(--text);
-      margin-bottom: 8px;
-      font-family: var(--sans);
-      font-weight: 700;
+    .words-panel-inner {
+      background:var(--bg2);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:20px 22px;
+      position:relative;
     }
+
+    .words-panel-title {
+      font-family:var(--mono); font-size:10px; letter-spacing:0.16em;
+      text-transform:uppercase; color:var(--vi2);
+      margin-bottom:14px;
+      display:flex; align-items:center; gap:8px;
+    }
+
+    .words-panel-title .syl-label {
+      color:var(--text); font-weight:500;
+    }
+
+    .words-list {
+      display:flex; flex-wrap:wrap; gap:8px;
+    }
+
+    .word-chip {
+      font-family:var(--mono); font-size:13px; font-weight:400;
+      color:var(--text);
+      background:var(--bg3);
+      border:1px solid var(--border2);
+      border-radius:6px;
+      padding:6px 12px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .word-chip .hl {
+      color:var(--vi3); font-weight:500;
+    }
+
+    /* loading shimmer */
+    .shimmer {
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+
+    .shimmer-chip {
+      height:33px; border-radius:6px;
+      background: linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%);
+      background-size:200% 100%;
+      animation: shimmer 1.2s infinite;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .words-panel-close {
+      position:absolute; top:14px; right:16px;
+      background:none; border:none; cursor:pointer;
+      color:var(--muted); font-size:16px; line-height:1;
+      transition:color 0.15s;
+      font-family:var(--mono);
+    }
+    .words-panel-close:hover { color:var(--text); }
 
     /* ── No results ── */
-    #no-results {
-      display: none;
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 32px;
-      color: var(--muted);
-      font-family: var(--mono);
-      font-size: 12px;
+    .no-results {
+      display:none;
+      padding:32px; text-align:center;
+      font-family:var(--mono); font-size:12px; color:var(--muted);
+      grid-column: 1/-1;
     }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align:center; padding:80px 24px;
+      font-family:var(--mono); font-size:13px; color:var(--muted);
+      line-height:1.8;
+    }
+    .empty-state .big { font-size:32px; display:block; margin-bottom:16px; opacity:0.4; }
+    .empty-state strong { display:block; font-family:var(--sans); font-size:16px; color:var(--text); margin-bottom:8px; }
 
     /* ── Footer ── */
     .footer {
-      margin-top: 56px;
-      padding-top: 24px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-      opacity: 0;
-      animation: fadeUp 0.5s 0.4s ease forwards;
+      margin-top:64px;
+      border-top:1px solid var(--border);
+      padding-top:22px;
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+      opacity:0; animation: up 0.5s 0.3s ease forwards;
     }
 
-    .footer-brand {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-      letter-spacing: 0.08em;
+    .footer-left {
+      font-family:var(--mono); font-size:10px; color:var(--muted);
+      letter-spacing:0.08em;
     }
+    .footer-left strong { color:var(--vi2); }
 
-    .footer-brand strong {
-      color: var(--violet-2);
+    .footer-right a {
+      font-family:var(--mono); font-size:10px; color:var(--muted);
+      text-decoration:none; letter-spacing:0.06em;
+      transition:color 0.15s;
     }
-
-    .footer-link {
-      font-family: var(--mono);
-      font-size: 11px;
-      color: var(--muted);
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-    .footer-link:hover { color: var(--accent); }
+    .footer-right a:hover { color:var(--vi3); }
 
     /* ── Animations ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0);   }
-    }
-
-    .syl-card {
-      opacity: 0;
-      animation: fadeUp 0.3s ease forwards;
+    @keyframes up {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
     }
 
     /* ── Responsive ── */
-    @media (max-width: 480px) {
-      .page { padding: 32px 16px 60px; }
-      .grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
-      .syl-card .syl-text { font-size: 15px; }
+    @media (max-width:500px) {
+      .page { padding:32px 16px 72px; }
+      .grid { grid-template-columns:repeat(auto-fill, minmax(88px, 1fr)); gap:7px; }
+      .syl-text { font-size:17px; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
 
-    <div class="header">
-      <div class="logo">💣</div>
-      <div class="header-text">
-        <h1>TokiBot · BombParty</h1>
-        <span>Rapport de fin de partie</span>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<div class="page">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-icon">💣</div>
+      <span class="brand-name">TokiBot · BombParty</span>
+    </div>
+    <span class="lang-badge" id="lang-badge">FR</span>
+  </div>
+
+  <!-- Content -->
+  <div id="root"></div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span class="footer-left">Propulsé par <strong>TokiBot</strong></span>
+    <div class="footer-right"><a href="https://jklm.fun" target="_blank" rel="noopener">jklm.fun ↗</a></div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const params = new URLSearchParams(window.location.search);
+  const nick   = decodeURIComponent(params.get('n') || '').trim();
+  const lang   = (params.get('lang') || 'fr').toLowerCase();
+  const rawS   = params.get('s') || '';
+  const syls   = rawS
+    ? decodeURIComponent(rawS).split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
+    : [];
+
+  // Lang badge
+  const lb = document.getElementById('lang-badge');
+  if (lb) lb.textContent = lang.toUpperCase();
+
+  const root = document.getElementById('root');
+
+  /* ── Empty state ── */
+  if (!nick && syls.length === 0) {
+    root.innerHTML = `<div class="empty-state">
+      <span class="big">🔍</span>
+      <strong>Aucune donnée</strong>
+      Ce lien est généré par TokiBot à la fin d'une partie BombParty.
+    </div>`;
+    return;
+  }
+
+  /* ── Render ── */
+  root.innerHTML = `
+    <div class="hero">
+      <p class="eyebrow">Récapitulatif · Syllabes ratées</p>
+      <div class="player-name"><span class="name-text">${esc(nick || 'Joueur')}</span></div>
+      <div class="meta-row">
+        <span class="chip">
+          <span class="chip-dot"></span>
+          <span class="chip-num">${syls.length}</span>
+          <span>syllabe${syls.length > 1 ? 's' : ''} ratée${syls.length > 1 ? 's' : ''}</span>
+        </span>
+        <span class="hint-text">Cliquer sur une syllabe pour voir des mots</span>
       </div>
     </div>
 
-    <div id="main-content">
-      <!-- Rempli dynamiquement -->
+    <div class="search-wrap">
+      <input id="search" type="text" placeholder="Filtrer…" autocomplete="off" spellcheck="false" />
     </div>
 
-    <div class="footer">
-      <span class="footer-brand">Propulsé par <strong>TokiBot</strong></span>
-      <a class="footer-link" href="https://jklm.fun" target="_blank" rel="noopener">jklm.fun ↗</a>
-    </div>
+    <div class="grid-wrap">
+      <div class="grid" id="grid">
+        ${syls.map((s, i) => `
+          <div class="syl-card" data-syl="${esc(s)}" style="animation-delay:${Math.min(i*28,500)}ms" tabindex="0">
+            <span class="syl-text">${esc(s)}</span>
+            <span class="syl-len">${s.length} lettre${s.length>1?'s':''}</span>
+          </div>`).join('')}
+        <div class="no-results" id="no-results">Aucun résultat.</div>
+      </div>
 
-  </div>
-
-  <script>
-    (function () {
-      const params  = new URLSearchParams(window.location.search);
-      const rawNick = params.get('n') || '';
-      const rawSyls = params.get('s') || '';
-
-      const nick = decodeURIComponent(rawNick).trim();
-      const syls = rawSyls
-        ? decodeURIComponent(rawSyls).split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
-        : [];
-
-      const container = document.getElementById('main-content');
-
-      /* ── Cas : pas de données ── */
-      if (!nick && syls.length === 0) {
-        container.innerHTML = `
-          <div class="state-box">
-            <span class="icon">🔍</span>
-            <strong>Aucune donnée</strong>
-            Ce lien ne contient pas de syllabes à afficher.<br>
-            Il est généré automatiquement par TokiBot à la fin d'une partie.
-          </div>`;
-        return;
-      }
-
-      /* ── Hero ── */
-      const heroHTML = `
-        <div class="hero">
-          <p class="hero-label">Récapitulatif · Syllabes ratées</p>
-          <h2 class="player-name">${escapeHtml(nick || 'Joueur inconnu')}</h2>
-          <div class="stats-row">
-            <div class="stat-pill">
-              <span class="dot"></span>
-              <span class="count">${syls.length}</span>
-              <span>syllabe${syls.length > 1 ? 's' : ''} ratée${syls.length > 1 ? 's' : ''}</span>
-            </div>
+      <div id="words-panel">
+        <div class="words-panel-inner">
+          <button class="words-panel-close" id="close-panel" title="Fermer">✕</button>
+          <div class="words-panel-title">
+            Mots contenant <span class="syl-label" id="panel-syl"></span>
           </div>
-        </div>`;
+          <div id="panel-body"></div>
+        </div>
+      </div>
+    </div>`;
 
-      /* ── Barre de recherche + grille ── */
-      const searchHTML = `
-        <div class="search-wrap">
-          <input id="search-input" type="text" placeholder="Filtrer les syllabes…" autocomplete="off" spellcheck="false" />
-        </div>`;
+  /* ── State ── */
+  let activeCard = null;
+  let wordCache  = {};  // syl → words[]
 
-      const cardsHTML = syls.map((syl, i) => `
-        <div class="syl-card" data-syl="${escapeHtml(syl)}" style="animation-delay:${Math.min(i * 30, 600)}ms">
-          <div class="syl-text">${escapeHtml(syl)}</div>
-          <div class="syl-len">${syl.length} lettre${syl.length > 1 ? 's' : ''}</div>
-        </div>`).join('');
+  /* ── Search ── */
+  const input     = document.getElementById('search');
+  const noResults = document.getElementById('no-results');
+  const cards     = () => document.querySelectorAll('.syl-card');
 
-      const gridHTML = `
-        <div class="grid" id="syl-grid">
-          ${cardsHTML}
-          <div id="no-results">Aucune syllabe ne correspond.</div>
-        </div>`;
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toUpperCase();
+    let vis = 0;
+    cards().forEach(c => {
+      const show = !q || c.dataset.syl.includes(q);
+      c.classList.toggle('hidden', !show);
+      if (show) vis++;
+    });
+    noResults.style.display = vis === 0 ? 'block' : 'none';
+  });
 
-      container.innerHTML = heroHTML + searchHTML + gridHTML;
+  /* ── Card click ── */
+  document.getElementById('grid').addEventListener('click', e => {
+    const card = e.target.closest('.syl-card');
+    if (!card) return;
+    const syl = card.dataset.syl;
 
-      /* ── Filtrage ── */
-      const input    = document.getElementById('search-input');
-      const grid     = document.getElementById('syl-grid');
-      const noResult = document.getElementById('no-results');
-      const cards    = grid.querySelectorAll('.syl-card[data-syl]');
-
-      input.addEventListener('input', () => {
-        const q = input.value.trim().toUpperCase();
-        let visible = 0;
-        cards.forEach(card => {
-          const match = !q || card.dataset.syl.includes(q);
-          card.classList.toggle('hidden', !match);
-          if (match) visible++;
-        });
-        noResult.style.display = visible === 0 ? 'block' : 'none';
-      });
-
-      function escapeHtml(str) {
-        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-      }
-    })();
-
-    /* escapeHtml doit aussi être accessible hors IIFE pour le template */
-    function escapeHtml(str) {
-      return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    // Toggle
+    if (activeCard === card && document.getElementById('words-panel').style.display !== 'none') {
+      closePanel();
+      return;
     }
-  </script>
+    selectCard(card, syl);
+  });
+
+  document.getElementById('close-panel').addEventListener('click', closePanel);
+
+  function selectCard(card, syl) {
+    cards().forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    activeCard = card;
+    showPanel(syl);
+  }
+
+  function closePanel() {
+    const panel = document.getElementById('words-panel');
+    panel.style.display = 'none';
+    cards().forEach(c => c.classList.remove('active'));
+    activeCard = null;
+  }
+
+  async function showPanel(syl) {
+    const panel    = document.getElementById('words-panel');
+    const panelSyl = document.getElementById('panel-syl');
+    const body     = document.getElementById('panel-body');
+
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    panelSyl.textContent = syl;
+
+    // Cache hit
+    if (wordCache[syl]) {
+      renderWords(body, syl, wordCache[syl]);
+      return;
+    }
+
+    // Loading shimmer
+    body.innerHTML = `<div class="shimmer">
+      ${[80,60,100,70,90].map(w=>`<div class="shimmer-chip" style="width:${w}px"></div>`).join('')}
+    </div>`;
+
+    try {
+      const words = await fetchWords(syl, lang);
+      wordCache[syl] = words;
+      renderWords(body, syl, words);
+    } catch (err) {
+      body.innerHTML = `<span style="font-family:var(--mono);font-size:12px;color:var(--muted)">
+        Impossible de charger les mots.
+      </span>`;
+    }
+  }
+
+  function renderWords(container, syl, words) {
+    if (!words || words.length === 0) {
+      container.innerHTML = `<span style="font-family:var(--mono);font-size:12px;color:var(--muted)">Aucun mot trouvé.</span>`;
+      return;
+    }
+    container.innerHTML = `<div class="words-list">${
+      words.map(w => {
+        const re = new RegExp(`(${esc(syl)})`, 'gi');
+        const hi = esc(w).replace(re, '<span class="hl">$1</span>');
+        return `<span class="word-chip">${hi}</span>`;
+      }).join('')
+    }</div>`;
+  }
+
+  /* ── Fetch words via Claude API ── */
+  async function fetchWords(syl, lang) {
+    const langNames = { fr:'français', en:'anglais', de:'allemand', es:'espagnol', it:'italien' };
+    const langName  = langNames[lang] || 'français';
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `Tu es un assistant lexical pour le jeu BombParty. Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans explication. Format strict : {"words":["mot1","mot2","mot3","mot4","mot5"]}`,
+        messages: [{
+          role: 'user',
+          content: `Donne-moi exactement 5 mots en ${langName} qui contiennent la syllabe "${syl.toLowerCase()}". Les mots doivent être courants, simples, sans tiret ni espace. Respecte le format JSON demandé.`
+        }]
+      })
+    });
+
+    const data = await resp.json();
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    return parsed.words || [];
+  }
+
+  /* ── Helpers ── */
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+})();
+</script>
 </body>
 </html>

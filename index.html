@@ -1,239 +1,385 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Syllabes ratées · TokiBot</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg:    #08070f;
-      --bg1:   #0e0c1c;
-      --line:  #1c1930;
-      --vi:    #7c5cbf;
-      --vi2:   #a888e8;
-      --text:  #ddd8f5;
-      --muted: #4a4468;
-      --f:     'DM Mono', monospace;
-    }
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-    html { scroll-behavior: smooth; }
-    body { background:var(--bg); color:var(--text); font-family:var(--f); min-height:100vh; -webkit-font-smoothing:antialiased; }
+'use strict';
 
-    .w { width:760px; margin:0 auto; padding-bottom:100px; }
+const playerDB       = require('../data/playerdatabase');
+const translations   = require('./translations');
+const commands       = require('./commands');
+const categoryManager = require('./categorymanager');
 
-    header {
-      display:flex; align-items:center; justify-content:space-between;
-      padding:28px 0; border-bottom:1px solid var(--line);
-      opacity:0; animation:up .5s ease forwards;
-    }
-    .h-brand { font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
-    .h-lang  { font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); padding:4px 10px; }
+/**
+ * statshandler.js — Statistiques, milestones et notifications joueurs.
+ * Méthodes injectées sur BombPartyBot.prototype via attachStatsHandlers().
+ */
+function attachStatsHandlers(BotClass, deps) {
+  const { panelPost, PANEL_PUBLIC_URL, PANEL_BASE_URL, http, https, notifyGlobalRecord } = deps;
+  const proto = BotClass.prototype;
 
-    .hero {
-      padding:56px 0 44px; border-bottom:1px solid var(--line);
-      opacity:0; animation:up .5s .08s ease forwards;
-    }
-    .hero-nick { font-size:80px; font-weight:500; letter-spacing:-.03em; line-height:1; margin-bottom:28px; }
-    .hero-meta { display:flex; align-items:baseline; gap:40px; }
-    .hero-count { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
-    .hero-count em { display:block; font-size:36px; font-weight:300; font-style:italic; letter-spacing:-.02em; color:var(--vi2); margin-bottom:4px; }
+proto._sendAccMilestone = function _sendAccMilestone(profile, category, milestone, totalWords) {
+  const mode = this._getCurrentMode();
 
-    .search {
-      border-bottom:1px solid var(--line);
-      opacity:0; animation:up .5s .14s ease forwards;
-    }
-    .search input {
-      width:100%; background:none; border:none; outline:none;
-      font-family:var(--f); font-size:13px; letter-spacing:.06em;
-      color:var(--text); padding:18px 0;
-    }
-    .search input::placeholder { color:var(--muted); }
-
-    .grid-wrap { opacity:0; animation:up .5s .2s ease forwards; }
-    .grid {
-      display:grid; grid-template-columns:repeat(5,1fr);
-      border-left:1px solid var(--line); border-top:1px solid var(--line);
-    }
-    .syl-card {
-      border-right:1px solid var(--line); border-bottom:1px solid var(--line);
-      padding:22px 18px; cursor:pointer; user-select:none;
-      transition:background .1s; position:relative;
-      opacity:0; animation:fi .3s ease forwards;
-    }
-    .syl-card:hover { background:var(--bg1); }
-    .syl-card.active { background:var(--bg1); }
-    .syl-card.active::after {
-      content:''; position:absolute; bottom:0; left:0; right:0;
-      height:2px; background:var(--vi);
-    }
-    .syl-card.hidden { display:none; }
-    .syl-t { font-size:22px; font-weight:500; letter-spacing:.04em; display:block; margin-bottom:8px; }
-    .syl-l { font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
-    .no-res {
-      display:none; padding:32px; font-size:11px; letter-spacing:.06em; color:var(--muted);
-      border-right:1px solid var(--line); border-bottom:1px solid var(--line); grid-column:1/-1;
-    }
-
-    #panel { display:none; border-bottom:1px solid var(--line); }
-    .panel-in {
-      padding:24px 0; display:flex; align-items:flex-start; gap:16px;
-    }
-    .panel-in #p-body { flex:1; }
-    .p-close {
-      background:none; border:1px solid var(--line); cursor:pointer;
-      font-family:var(--f); font-size:11px;
-      color:var(--muted); padding:5px 9px; transition:color .15s, border-color .15s;
-      flex-shrink:0;
-    }
-    .p-close:hover { color:var(--text); border-color:var(--muted); }
-
-    .words { display:flex; flex-wrap:wrap; gap:6px; align-content:start; }
-    .word {
-      font-size:12px; letter-spacing:.04em; color:var(--text);
-      border:1px solid var(--line); padding:6px 12px; transition:border-color .1s;
-    }
-    .word:hover { border-color:var(--muted); }
-    .word .hl { color:var(--vi2); font-weight:500; }
-
-    .err { font-size:11px; letter-spacing:.06em; color:var(--muted); }
-
-
-    .empty { padding:80px 0; border-top:1px solid var(--line); }
-    .empty p { font-size:11px; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
-    .empty strong { font-size:24px; font-weight:300; color:var(--text); display:block; }
-
-    @keyframes up { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
-    @keyframes fi { from{opacity:0} to{opacity:1} }
-
-    @media (max-width:820px) {
-      .w { width:100%; padding:0 20px 80px; }
-      .grid { grid-template-columns:repeat(3,1fr); }
-      .hero-nick { font-size:52px; }
-      .panel-in { grid-template-columns:1fr; gap:24px; }
-    }
-  </style>
-</head>
-<body>
-<div class="w">
-  <header>
-    <span class="h-brand">TokiBot · BombParty</span>
-    <span class="h-lang" id="lang-badge">FR</span>
-  </header>
-  <div id="root"></div>
-</div>
-<script>
-(function(){
-  const p    = new URLSearchParams(location.search);
-  const nick = decodeURIComponent(p.get('n') || '').trim();
-  const lang = (p.get('lang') || 'fr').toLowerCase();
-  const syls = (p.get('s') ? decodeURIComponent(p.get('s')) : '')
-    .split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
-
-  // Paramètre &w= : "CL:Clair,Clé,Incluant|RE:Rêve,Secret,Libre"
-  const wordsMap = {};
-  const wParam = p.get('w') ? decodeURIComponent(p.get('w')) : '';
-  if (wParam) {
-    for (const chunk of wParam.split('|')) {
-      const idx = chunk.indexOf(':');
-      if (idx === -1) continue;
-      const syl   = chunk.slice(0, idx).toUpperCase();
-      const words = chunk.slice(idx + 1).split(',').map(w => w.trim()).filter(Boolean);
-      if (words.length) wordsMap[syl] = words;
-    }
+  // Sauvegarde directe dans la DB locale (fiable, sans dépendre du panel)
+  try {
+    playerDB.forLang(this.roomLang).updateAccMilestone(
+      profile.auth.service,
+      profile.auth.username,
+      mode,
+      category,
+      milestone,
+      totalWords,
+      profile.roundStartTime ?? 0
+    );
+  } catch (e) {
+    this.log(`[ACC] Erreur sauvegarde locale: ${e.message}`, 'warn');
   }
 
-  document.getElementById('lang-badge').textContent = lang.toUpperCase();
-  const root = document.getElementById('root');
+  // Notification au panel (best-effort, échec silencieux si panel hors ligne)
+  const data    = JSON.stringify({
+    authService:  profile.auth.service,
+    authUsername: profile.auth.username,
+    lang:         this.roomLang || 'fr',
+    mode,
+    category,
+    milestone,
+    totalWords,
+  });
+  const options = {
+    hostname: 'localhost', port: 9999, path: '/players/acc', method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
+  };
+  const req = http.request(options, (res) => { res.on('data', () => {}); res.on('end', () => {}); });
+  req.on('error', () => {});
+  req.write(data);
+  req.end();
+  this.log(`[ACC] ${profile.nickname} ${category} palier ${milestone} en ${totalWords} mots (${mode})`, 'info');
+}
 
-  if (!nick && !syls.length) {
-    root.innerHTML = `<div class="empty"><p>Aucune donnée</p><strong>Ce lien est généré automatiquement par TokiBot en fin de partie.</strong></div>`;
-    return;
+proto._sendSpeedMilestone = function _sendSpeedMilestone(profile, category, milestone, elapsedMs) {
+  const mode = this._getCurrentMode();
+
+  try {
+    playerDB.forLang(this.roomLang).updateSpeedMilestone(
+      profile.auth.service,
+      profile.auth.username,
+      mode,
+      category,
+      milestone,
+      elapsedMs,
+      profile.roundStartTime ?? 0
+    );
+  } catch (e) {
+    this.log(`[SPEED] Erreur sauvegarde locale: ${e.message}`, 'warn');
   }
 
-  root.innerHTML = `
-    <div class="hero">
-      <div class="hero-nick">${esc(nick||'—')}</div>
-      <div class="hero-meta">
-        <div class="hero-count"><em>${syls.length}</em>syllabe${syls.length>1?'s':''} ratée${syls.length>1?'s':''}</div>
-      </div>
-    </div>
-    <div class="search"><input id="srch" type="text" placeholder="Filtrer…" autocomplete="off" spellcheck="false"/></div>
-    <div class="grid-wrap">
-      <div class="grid" id="grid">
-        ${syls.map((s,i) => `
-          <div class="syl-card" data-syl="${esc(s)}" style="animation-delay:${Math.min(i*25,500)}ms">
-            <span class="syl-t">${esc(s)}</span>
-            <span class="syl-l">${s.length} lettre${s.length>1?'s':''}</span>
-          </div>`).join('')}
-        <div class="no-res" id="no-res">Aucun résultat.</div>
-      </div>
-      <div id="panel">
-        <div class="panel-in">
-          <div id="p-body"></div>
-          <button class="p-close" id="p-close">✕</button>
-        </div>
-      </div>
-    </div>`;
+  const mins = Math.floor(elapsedMs / 60000);
+  const secs = Math.floor((elapsedMs % 60000) / 1000);
+  const timeStr = mins > 0
+    ? `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+    : `${String(secs).padStart(2, '0')}s`;
+  this.log(`[SPEED] ${profile.nickname} ${category} palier ${milestone} en ${timeStr} (${mode})`, 'info');
+}
 
-  let active = null;
+proto._sendPlayerStats = function _sendPlayerStats(profile, aliveSeconds, forcedMode = null, forcedLang = null) {
+  if (!profile || !profile.auth) return;
+  if (!this._scoresEnabled) { 
+    this.log(`📊 [SCORES OFF] Stats de ${profile.nickname} ignorées (togglescores désactivé)`, 'warn'); 
+    return; 
+  }
+  const roomStats       = categoryManager.playerStats[this.roomCode];
+  const playerRoomStats = roomStats ? roomStats[profile.nickname] : null;
+  let totalWords = 0, categories = {}, nikedSyllables = [];
+  if (playerRoomStats) {
+    totalWords     = playerRoomStats.totalWords;
+    categories     = playerRoomStats.categoryWords;
+    nikedSyllables = playerRoomStats.nikedSyllables || [];
+  }
+  if (profile.nikedSyllables && profile.nikedSyllables.length > 0) {
+    for (const syl of profile.nikedSyllables) {
+      if (!nikedSyllables.includes(syl)) nikedSyllables.push(syl);
+    }
+  }
+  const currentMode = forcedMode ?? this._getCurrentMode();
+  const effectiveLang = forcedLang ?? this.roomLang ?? 'fr';
+  console.log(`\x1b[36m[STATS] ${profile.nickname}: ${totalWords} mots totaux (mode: ${currentMode}, lang: ${effectiveLang})\x1b[0m`);
+  const livesGained = profile.livesGained ?? 0;
 
-  document.getElementById('srch').addEventListener('input', e => {
-    const q = e.target.value.trim().toUpperCase();
-    let n = 0;
-    document.querySelectorAll('.syl-card').forEach(c => {
-      const ok = !q || c.dataset.syl.includes(q);
-      c.classList.toggle('hidden', !ok);
-      if (ok) n++;
+  try {
+    const sessionStatsDirect = {
+      timeAlive:      aliveSeconds,
+      wordCount:      totalWords,
+      categories,
+      nikedSyllables,
+      livesGained,
+      alphaCount:     profile.alphaCount || 0,
+      mode:           currentMode,
+      roundStartTime: profile.roundStartTime ?? 0,
+    };
+    const result = playerDB.forLang(effectiveLang).updatePlayerRecords(
+      profile.auth.service, profile.auth.username, profile.nickname,
+      sessionStatsDirect, true
+    );
+    if (result && Array.isArray(result.broken) && result.broken.length > 0) {
+      profile._brokenRecords = result.broken;
+
+      // ── Vérification records globaux → notification Discord ──────────────
+      if (typeof notifyGlobalRecord === 'function') {
+        try {
+          // On relit les records globaux (déjà mis à jour avec les nouvelles valeurs)
+          const globalRecords = playerDB.forLang(effectiveLang).getGlobalRecords(currentMode);
+
+          for (const { field, prev, next } of result.broken) {
+            let isGlobal = false;
+
+            if (field === 'time') {
+              isGlobal = globalRecords.timeRecord?.count === next || globalRecords.timeRecord?.time === next;
+            } else if (field === 'words') {
+              isGlobal = globalRecords.wordRecord?.count === next;
+            } else if (field === 'niked') {
+              isGlobal = globalRecords.nikedRecord?.count === next;
+            } else if (field === 'lives') {
+              isGlobal = globalRecords.livesRecord?.count === next;
+            } else if (field === 'alpha') {
+              isGlobal = globalRecords.alphaRecord?.count === next;
+            } else if (field.startsWith('cat:')) {
+              const cat = field.slice(4);
+              isGlobal = globalRecords.categories?.[cat]?.count === next;
+            }
+
+            if (isGlobal) {
+              notifyGlobalRecord({
+                lang:     effectiveLang,
+                mode:     currentMode,
+                field,
+                prev,
+                next,
+                nickname: profile.nickname,
+                https,
+              });
+            }
+          }
+        } catch (discordErr) {
+          this.log(`[Discord] Erreur vérif record global: ${discordErr.message}`, 'warn');
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────────
+    }
+  } catch (e) {
+    this.log(`[STATS] Erreur mise à jour DB locale: ${e.message}`, 'warn');
+  }
+
+  const data    = JSON.stringify({
+    authService:  profile.auth.service,
+    authUsername: profile.auth.username,
+    nickname:     profile.nickname,
+    aliveSeconds,
+    lang:         effectiveLang,
+    sessionStats: { 
+      timeAlive: aliveSeconds, 
+      wordCount: totalWords, 
+      categories, 
+      nikedSyllables, 
+      livesGained, 
+      alphaCount: profile.alphaCount || 0,
+      mode: currentMode,
+      roundStartTime: profile.roundStartTime ?? 0,
+    },
+  });
+  const options = {
+    hostname: 'localhost', port: 9999, path: '/players/stats', method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
+  };
+  const req = http.request(options, (res) => {
+    let body = '';
+    res.on('data', chunk => { body += chunk; });
+    res.on('end', () => {
+      try {
+        const parsed = JSON.parse(body);
+        if (Array.isArray(parsed.broken) && parsed.broken.length > 0 &&
+            (!profile._brokenRecords || profile._brokenRecords.length === 0)) {
+          profile._brokenRecords = parsed.broken;
+        }
+      } catch (_) {}
     });
-    document.getElementById('no-res').style.display = n ? 'none' : 'block';
   });
+  req.on('error', () => {});
+  req.write(data);
+  req.end();
+}
 
-  document.getElementById('grid').addEventListener('click', e => {
-    const c = e.target.closest('.syl-card');
-    if (!c) return;
-    if (active === c && document.getElementById('panel').style.display !== 'none') { close(); return; }
-    document.querySelectorAll('.syl-card').forEach(x => x.classList.remove('active'));
-    c.classList.add('active');
-    active = c;
-    openPanel(c.dataset.syl);
-  });
 
-  document.getElementById('p-close').addEventListener('click', close);
+// ── Tracking Alpha ────────────────────────────────────────────────────────
+// Un "alpha" = placer consécutivement un mot commençant par A, puis B, C…
+// jusqu'à X (24e lettre). Y et Z sont exclus car trop rares en jeu normal.
+// À chaque alpha complété, le compteur profile.alphaCount est incrémenté
+// et un message est envoyé en chat.
+proto._checkAlpha = function _checkAlpha(peerId, word) {
+  const profile = this.playerProfiles[peerId];
+  if (!profile) return;
 
-  function close() {
-    document.getElementById('panel').style.display = 'none';
-    document.querySelectorAll('.syl-card').forEach(x => x.classList.remove('active'));
-    active = null;
+  const ALPHA_END = 'z'; // lettre cible pour compléter un alpha
+  const firstLetter = word.trim().toLowerCase().replace(/[^a-z]/g, '')[0];
+  if (!firstLetter) return;
+
+  // Initialise la progression si nécessaire
+  if (profile.alphaProgress === null) {
+    profile.alphaProgress = 'a';
   }
 
-  function openPanel(syl) {
-    const panel = document.getElementById('panel');
-    const body  = document.getElementById('p-body');
-    document.getElementById('p-syl').textContent = syl;
-    panel.style.display = 'block';
-    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-    const words = wordsMap[syl];
-    if (words && words.length) {
-      render(body, syl, words);
+  if (firstLetter === profile.alphaProgress) {
+    if (firstLetter === ALPHA_END) {
+      // Alpha complété !
+      profile.alphaCount = (profile.alphaCount || 0) + 1;
+      profile.alphaProgress = 'a'; // repart à A
+      const t = require('./translations').t(this.roomLang);
+      const msg = t('alpha_completed', { nickname: profile.nickname, count: profile.alphaCount });
+      this.log(`[ALPHA] ${profile.nickname} complète un alpha ! (total: ${profile.alphaCount})`, 'ok');
+      this._sendChatMessageWithAntiSpam(msg);
     } else {
-      body.innerHTML = `<span class="err">Aucun mot disponible pour cette syllabe.</span>`;
+      // Avance à la lettre suivante
+      profile.alphaProgress = String.fromCharCode(profile.alphaProgress.charCodeAt(0) + 1);
+      this.log(`[ALPHA] ${profile.nickname} → prochaine lettre : ${profile.alphaProgress.toUpperCase()}`, 'info');
     }
   }
+  // Si la lettre ne correspond pas à la progression, on ne reset pas —
+  // seule la lettre attendue compte, les autres mots sont ignorés.
+}
 
-  function render(el, syl, words) {
-    if (!words || !words.length) { el.innerHTML = `<span class="err">Aucun mot trouvé.</span>`; return; }
-    const re = new RegExp(`(${esc(syl)})`, 'gi');
-    el.innerHTML = `<div class="words">${
-      words.map(w => `<span class="word">${esc(w).replace(re, '<span class="hl">$1</span>')}</span>`).join('')
-    }</div>`;
-  }
+proto._sendPlayerDeathSummary = function _sendPlayerDeathSummary(peerId, profile, roomStatsSnapshot, langSnapshot) {
+  if (!profile.auth) return;
+  try {
+    const aliveTime = Math.floor((Date.now() - profile.roundStartTime) / 1000);
+    const minutes   = Math.floor(aliveTime / 60);
+    const seconds   = aliveTime % 60;
+    const timeStr   = minutes > 0 ? `${minutes}m${seconds}s` : `${seconds}s`;
 
-  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-})();
-</script>
-</body>
-</html>
+    // Utilise le snapshot si fourni (protection race condition endGame),
+    // sinon fallback sur l'état live (appels directs depuis d'autres contextes).
+    const roomStats   = roomStatsSnapshot ?? categoryManager.playerStats[this.roomCode];
+    const playerStats = roomStats && roomStats[profile.nickname];
+
+    const tDeath = require('./translations').t(langSnapshot ?? this.roomLang);
+    const lines = [];
+    lines.push(tDeath('death_summary_header', { nickname: profile.nickname }));
+    lines.push(tDeath('death_summary_time', { time: timeStr }));
+
+    if (playerStats) {
+      const totalWords = playerStats.totalWords || 0;
+      if (totalWords > 0) lines.push(tDeath('death_summary_words', { count: totalWords }));
+
+      const cats = Object.entries(playerStats.categoryWords || {})
+        .sort((a, b) => b[1] - a[1]);
+
+      for (const [cat, count] of cats) {
+        if (count <= 0) continue;
+        const label = this._getCategoryLabel(cat, count, this.roomLang);
+        lines.push(`— ${label} : ${count}`);
+      }
+
+      const snList = (playerStats.nikedSyllables || []).concat(profile.nikedSyllables || []);
+      const uniqSN = [...new Set(snList)];
+      if (uniqSN.length > 0) {
+        lines.push(tDeath('death_summary_sn', { count: uniqSN.length }));
+      }
+    }
+
+    const livesGained = profile.livesGained ?? 0;
+    if (livesGained > 0) {
+      lines.push(tDeath('death_summary_lives', { count: livesGained }));
+    }
+
+    // ── Alphas complétés ─────────────────────────────────────────────────
+    const alphaCount = profile.alphaCount || 0;
+    if (alphaCount > 0) {
+      lines.push(tDeath('death_summary_alpha', { count: alphaCount }));
+    }
+
+    // ── Syllabes ratées : lien cliquable si le panel est accessible ──────
+    const lostSyls = profile.lostOnSyllables || [];
+    if (lostSyls.length > 0) {
+      const sylsParam = encodeURIComponent(lostSyls.join(','));
+      const nickParam = encodeURIComponent(profile.nickname);
+      const langParam = encodeURIComponent(this.roomLang || 'fr');
+      let link = `${PANEL_PUBLIC_URL}/?n=${nickParam}&s=${sylsParam}&lang=${langParam}`;
+
+      // Embarquer 5 mots par syllabe dans l'URL — commands.getSuggestions est déjà importé
+      try {
+        const lang = this.roomLang || 'fr';
+        const wordsPerSyl = lostSyls.map(syl => {
+          const words = commands.getSuggestions(syl, 5, lang);
+          return `${syl}:${words.join(',')}`;
+        });
+        link += `&w=${encodeURIComponent(wordsPerSyl.join('|'))}`;
+      } catch (e) {
+        this.log(`[SYLS] Erreur génération mots: ${e.message}`, 'warn');
+      }
+
+      lines.push(tDeath('death_summary_lost_syls', { count: lostSyls.length, link }));
+    }
+
+    const message = lines.join('\r');
+    this.log(`Résumé mort: ${lines[0]}`, 'info');
+    setTimeout(() => { this._sendChatMessageWithAntiSpam(message); }, 100 + Math.random() * 100);
+
+    setTimeout(() => { this._sendNewRecordsMessage(profile); }, 1200);
+  } catch (e) { this.log(`Erreur envoi résumé mort: ${e.message}`, 'warn'); }
+}
+
+proto._sendNewRecordsMessage = function _sendNewRecordsMessage(profile) {
+  try {
+    const broken = profile._brokenRecords;
+    if (!broken || broken.length === 0) return;
+    delete profile._brokenRecords;
+
+    const tRec = require('./translations').t(this.roomLang);
+
+    function fmtTime(sec) {
+      const m = Math.floor(sec / 60), s = sec % 60;
+      return m > 0 ? `${m}m${s}s` : `${s}s`;
+    }
+
+    const lines = [tRec('records_broken_header')];
+    for (const { field, prev, next } of broken) {
+      if (field === 'time') {
+        lines.push(tRec('record_broken_time', { prev: fmtTime(prev), next: fmtTime(next) }));
+      } else if (field === 'words') {
+        lines.push(tRec('record_broken_words', { prev, next }));
+      } else if (field === 'niked') {
+        lines.push(tRec('record_broken_niked', { prev, next }));
+      } else if (field === 'lives') {
+        lines.push(tRec('record_broken_lives', { prev, next }));
+      } else if (field === 'alpha') {
+        lines.push(`Alpha : ${prev} → ${next}`);
+      } else if (field.startsWith('cat:')) {
+        const cat = field.slice(4);
+        const label = this._getCategoryLabel(cat, 2, this.roomLang);
+        lines.push(tRec('record_broken_category', { label, prev, next }));
+      }
+    }
+
+    this._sendChatMessageWithAntiSpam(lines.join('\r'));
+  } catch (e) { this.log(`Erreur envoi records: ${e.message}`, 'warn'); }
+}
+
+proto._incrementGuestGame = function _incrementGuestGame(aliveSeconds = 0) {
+  const data    = JSON.stringify({ aliveSeconds });
+  const options = {
+    hostname: 'localhost', port: 9999, path: '/players/guest-game', method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
+  };
+  const req = http.request(options, r => { r.on('data', () => {}); r.on('end', () => {}); });
+  req.on('error', () => {});
+  req.write(data);
+  req.end();
+}
+
+proto._sendGuestNotification = function _sendGuestNotification(profile) {
+  try {
+    if (this.notifiedGuests.has(profile.nickname)) return;
+    this.notifiedGuests.add(profile.nickname);
+    const message = require('./translations').t(this.roomLang)('guest_notification', { nickname: profile.nickname });
+    this.log(`Notification guest: ${profile.nickname}`, 'info');
+    setTimeout(() => { this._sendChatMessageWithAntiSpam(message); }, 200 + Math.random() * 100);
+  } catch (e) { this.log(`Erreur envoi notification guest: ${e.message}`, 'warn'); }
+}
+
+}
+
+module.exports = { attachStatsHandlers };

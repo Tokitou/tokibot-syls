@@ -6,465 +6,532 @@
   <title>Syllabes ratées · TokiBot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg:       #080710;
-      --bg2:      #0f0d1c;
-      --bg3:      #17142a;
-      --border:   #221e38;
-      --border2:  #2e2850;
-      --vi:       #7c5cbf;
-      --vi2:      #a07ee8;
-      --vi3:      #c4a6ff;
-      --glow:     rgba(124,92,191,0.15);
-      --text:     #ede8ff;
-      --muted:    #6b6385;
-      --danger:   #e05c8a;
-      --mono:     'DM Mono', monospace;
-      --sans:     'Syne', sans-serif;
+      --bg:     #07060f;
+      --bg2:    #0d0b1a;
+      --vi:     #8a6fd4;
+      --vi2:    #b49ee8;
+      --vi3:    #d4c4ff;
+      --text:   #e8e2ff;
+      --muted:  #524b6e;
+      --border: #1c1830;
+      --mono:   'DM Mono', monospace;
+      --serif:  'Playfair Display', serif;
     }
 
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
 
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: var(--sans);
+      font-family: var(--mono);
       min-height: 100vh;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Grain ── */
-    body::before {
-      content:'';
-      position:fixed; inset:0;
-      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-      background-size:300px;
-      pointer-events:none; z-index:0;
+    /* ── Ligne verticale décorative (style katherine-le) ── */
+    .vline {
+      position: fixed;
+      top: 0; bottom: 0;
+      width: 1px;
+      background: var(--border);
+      pointer-events: none;
+      z-index: 0;
     }
-
-    /* ── Radial glow ── */
-    .bg-glow {
-      position:fixed; pointer-events:none; z-index:0;
-      border-radius:50%; filter:blur(80px); opacity:0.6;
-    }
-    .bg-glow-1 {
-      width:500px; height:400px;
-      top:-100px; left:50%; transform:translateX(-50%);
-      background: radial-gradient(ellipse, rgba(100,60,180,0.18) 0%, transparent 70%);
-    }
-    .bg-glow-2 {
-      width:300px; height:300px;
-      bottom:5%; right:5%;
-      background: radial-gradient(ellipse, rgba(80,40,160,0.1) 0%, transparent 70%);
-    }
+    .vline-1 { left: 220px; }
+    .vline-2 { right: 220px; }
 
     /* ── Layout ── */
     .page {
-      position:relative; z-index:1;
-      max-width:820px;
-      margin:0 auto;
-      padding:52px 28px 96px;
+      position: relative; z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 40px 120px;
     }
 
-    /* ── Topbar ── */
-    .topbar {
-      display:flex; align-items:center; justify-content:space-between;
-      margin-bottom:60px;
-      opacity:0; animation: up 0.5s ease forwards;
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+      opacity: 0;
+      animation: fadeUp .6s .05s ease forwards;
     }
 
-    .brand {
-      display:flex; align-items:center; gap:10px;
-    }
-
-    .brand-icon {
-      width:30px; height:30px;
-      background: linear-gradient(135deg, var(--vi), var(--vi2));
-      border-radius:7px;
-      display:flex; align-items:center; justify-content:center;
-      font-size:14px;
-      box-shadow: 0 0 20px rgba(124,92,191,0.3);
-    }
-
-    .brand-name {
+    .nav-brand {
       font-family: var(--mono);
-      font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
       color: var(--muted);
     }
 
-    .lang-badge {
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-lang {
       font-family: var(--mono);
-      font-size:10px; letter-spacing:0.1em; text-transform:uppercase;
+      font-size: 10px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
       color: var(--muted);
       border: 1px solid var(--border);
-      border-radius:4px; padding:3px 8px;
+      padding: 4px 10px;
+      border-radius: 3px;
     }
 
-    /* ── Hero ── */
+    /* ── Hero — typographie monumentale ── */
     .hero {
-      margin-bottom:52px;
-      opacity:0; animation: up 0.5s 0.08s ease forwards;
+      padding: 80px 0 64px;
+      border-bottom: 1px solid var(--border);
+      opacity: 0;
+      animation: fadeUp .7s .15s ease forwards;
     }
 
-    .eyebrow {
+    .hero-label {
       font-family: var(--mono);
-      font-size:10px; letter-spacing:0.18em; text-transform:uppercase;
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .hero-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .hero-name {
+      font-family: var(--serif);
+      font-size: clamp(72px, 12vw, 140px);
+      font-weight: 900;
+      line-height: .92;
+      letter-spacing: -.02em;
+      color: var(--text);
+      margin-bottom: 40px;
+    }
+
+    /* Accent italique sur une partie du nom */
+    .hero-name em {
+      font-style: italic;
       color: var(--vi2);
-      margin-bottom:12px;
     }
 
-    .player-name {
-      font-size:clamp(36px,8vw,64px);
-      font-weight:800; letter-spacing:-0.03em; line-height:0.95;
-      margin-bottom:22px;
-      position:relative; display:inline-block;
+    .hero-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 40px;
+      flex-wrap: wrap;
     }
 
-    .player-name .name-text {
-      background: linear-gradient(115deg, var(--text) 30%, var(--vi3) 100%);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      background-clip:text;
+    .hero-count {
+      font-family: var(--serif);
+      font-size: 48px;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--vi2);
+      line-height: 1;
     }
 
-    /* underline accent */
-    .player-name::after {
-      content:'';
-      position:absolute; bottom:-6px; left:0;
-      width:40%; height:2px;
-      background: linear-gradient(90deg, var(--vi), transparent);
-      border-radius:2px;
+    .hero-count-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 6px;
     }
 
-    .meta-row {
-      display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-      margin-top:18px;
-    }
-
-    .chip {
-      display:inline-flex; align-items:center; gap:7px;
-      border:1px solid var(--border2); border-radius:100px;
-      padding:5px 14px;
-      font-family:var(--mono); font-size:11px;
-    }
-
-    .chip-dot {
-      width:5px; height:5px; border-radius:50%;
-      background:var(--danger); flex-shrink:0;
-      box-shadow:0 0 6px rgba(224,92,138,0.5);
-    }
-
-    .chip-num { color:var(--vi3); font-weight:500; }
-
-    .hint-text {
-      font-family:var(--mono); font-size:11px; color:var(--muted);
-      letter-spacing:0.04em;
+    .hero-hint {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: .06em;
+      align-self: flex-end;
+      padding-bottom: 4px;
     }
 
     /* ── Search ── */
-    .search-wrap {
-      margin-bottom:24px;
-      opacity:0; animation: up 0.5s 0.16s ease forwards;
-      position:relative;
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      padding: 0;
+      opacity: 0;
+      animation: fadeUp .6s .25s ease forwards;
     }
 
-    .search-wrap::before {
-      content:'⌕';
-      position:absolute; left:14px; top:50%; transform:translateY(-50%);
-      color:var(--muted); font-size:16px; pointer-events:none;
-      font-family:var(--mono);
+    .search-row label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 20px 24px 20px 0;
+      white-space: nowrap;
+      border-right: 1px solid var(--border);
+      margin-right: 24px;
     }
 
-    .search-wrap input {
-      width:100%;
-      background:var(--bg2);
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:11px 16px 11px 38px;
-      font-family:var(--mono); font-size:12px; letter-spacing:0.06em;
-      color:var(--text); outline:none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+    .search-row input {
+      flex: 1;
+      background: none;
+      border: none;
+      font-family: var(--mono);
+      font-size: 13px;
+      letter-spacing: .08em;
+      color: var(--text);
+      outline: none;
+      padding: 20px 0;
     }
-    .search-wrap input:focus {
-      border-color:var(--vi);
-      box-shadow:0 0 0 3px var(--glow);
-    }
-    .search-wrap input::placeholder { color:var(--muted); }
+    .search-row input::placeholder { color: var(--muted); }
 
-    /* ── Grid ── */
-    .grid-wrap {
-      opacity:0; animation: up 0.5s 0.22s ease forwards;
+    /* ── Grid syllabe ── */
+    .grid-section {
+      padding-top: 0;
+      opacity: 0;
+      animation: fadeUp .6s .32s ease forwards;
     }
 
     .grid {
-      display:grid;
-      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-      gap:8px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      border-left: 1px solid var(--border);
+      border-top: 1px solid var(--border);
     }
 
-    /* ── Syllable card ── */
+    /* ── Syllabe card — style grille éditoriale ── */
     .syl-card {
-      position:relative;
-      background:var(--bg2);
-      border:1px solid var(--border);
-      border-radius:10px;
-      padding:18px 10px 14px;
-      text-align:center;
-      cursor:pointer;
-      transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
-      opacity:0;
-      animation: up 0.35s ease forwards;
-      user-select:none;
-      overflow:hidden;
-    }
-
-    .syl-card::after {
-      content:'';
-      position:absolute; inset:0;
-      background:linear-gradient(135deg, transparent 40%, rgba(124,92,191,0.06));
-      pointer-events:none;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 20px 24px;
+      cursor: pointer;
+      transition: background .12s;
+      user-select: none;
+      opacity: 0;
+      animation: fadeIn .3s ease forwards;
+      position: relative;
     }
 
     .syl-card:hover {
-      border-color:var(--vi2);
-      background:var(--bg3);
-      transform:translateY(-3px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(124,92,191,0.2);
+      background: var(--bg2);
     }
 
     .syl-card.active {
-      border-color:var(--vi);
-      background:var(--bg3);
-      box-shadow: 0 0 0 1px var(--vi), 0 8px 32px rgba(124,92,191,0.2);
+      background: var(--bg2);
+    }
+    .syl-card.active::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--vi);
     }
 
-    .syl-card.hidden { display:none; }
+    .syl-card.hidden { display: none; }
 
     .syl-text {
-      font-family:var(--mono); font-size:20px; font-weight:500;
-      letter-spacing:0.08em; text-transform:uppercase;
-      color:var(--text);
-      display:block; margin-bottom:4px;
+      font-family: var(--serif);
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: .01em;
+      color: var(--text);
+      display: block;
+      margin-bottom: 10px;
     }
 
     .syl-len {
-      font-family:var(--mono); font-size:9px; letter-spacing:0.12em;
-      text-transform:uppercase; color:var(--muted);
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--muted);
     }
 
-    /* ── Words panel (below grid) ── */
+    /* ── Panel mots ── */
     #words-panel {
-      margin-top:16px;
-      display:none;
+      display: none;
+      border-bottom: 1px solid var(--border);
     }
 
     .words-panel-inner {
-      background:var(--bg2);
-      border:1px solid var(--border);
-      border-radius:12px;
-      padding:20px 22px;
-      position:relative;
+      padding: 40px 0;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 0 48px;
+      align-items: start;
     }
 
-    .words-panel-title {
-      font-family:var(--mono); font-size:10px; letter-spacing:0.16em;
-      text-transform:uppercase; color:var(--vi2);
-      margin-bottom:14px;
-      display:flex; align-items:center; gap:8px;
+    .words-panel-meta {
+      border-right: 1px solid var(--border);
+      padding-right: 48px;
     }
 
-    .words-panel-title .syl-label {
-      color:var(--text); font-weight:500;
+    .words-panel-tag {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .words-panel-syl {
+      font-family: var(--serif);
+      font-size: 48px;
+      font-weight: 700;
+      font-style: italic;
+      color: var(--vi2);
+      line-height: 1;
+      margin-bottom: 24px;
+    }
+
+    .words-panel-close {
+      background: none;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .08em;
+      padding: 6px 14px;
+      transition: color .15s, border-color .15s;
+      display: inline-block;
+    }
+    .words-panel-close:hover {
+      color: var(--text);
+      border-color: var(--muted);
     }
 
     .words-list {
-      display:flex; flex-wrap:wrap; gap:8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-content: start;
     }
 
     .word-chip {
-      font-family:var(--mono); font-size:13px; font-weight:400;
-      color:var(--text);
-      background:var(--bg3);
-      border:1px solid var(--border2);
-      border-radius:6px;
-      padding:6px 12px;
-      position:relative;
-      overflow:hidden;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 7px 14px;
+      letter-spacing: .04em;
+      transition: border-color .12s;
     }
+    .word-chip:hover { border-color: var(--muted); }
 
     .word-chip .hl {
-      color:var(--vi3); font-weight:500;
+      color: var(--vi2);
+      font-weight: 500;
     }
 
-    /* loading shimmer */
-    .shimmer {
-      display:flex; gap:8px; flex-wrap:wrap;
-    }
-
+    /* shimmer */
+    .shimmer { display: flex; gap: 8px; flex-wrap: wrap; }
     .shimmer-chip {
-      height:33px; border-radius:6px;
-      background: linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%);
-      background-size:200% 100%;
+      height: 34px;
+      background: linear-gradient(90deg, var(--bg2) 25%, var(--border) 50%, var(--bg2) 75%);
+      background-size: 200% 100%;
       animation: shimmer 1.2s infinite;
     }
-
     @keyframes shimmer {
       0%   { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
 
-    .words-panel-close {
-      position:absolute; top:14px; right:16px;
-      background:none; border:none; cursor:pointer;
-      color:var(--muted); font-size:16px; line-height:1;
-      transition:color 0.15s;
-      font-family:var(--mono);
-    }
-    .words-panel-close:hover { color:var(--text); }
-
     /* ── No results ── */
     .no-results {
-      display:none;
-      padding:32px; text-align:center;
-      font-family:var(--mono); font-size:12px; color:var(--muted);
+      display: none;
+      padding: 48px;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
       grid-column: 1/-1;
+      letter-spacing: .06em;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
     }
 
     /* ── Empty state ── */
     .empty-state {
-      text-align:center; padding:80px 24px;
-      font-family:var(--mono); font-size:13px; color:var(--muted);
-      line-height:1.8;
+      padding: 120px 0;
+      border-top: 1px solid var(--border);
     }
-    .empty-state .big { font-size:32px; display:block; margin-bottom:16px; opacity:0.4; }
-    .empty-state strong { display:block; font-family:var(--sans); font-size:16px; color:var(--text); margin-bottom:8px; }
+    .empty-state p {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: .1em;
+      margin-bottom: 8px;
+    }
+    .empty-state strong {
+      font-family: var(--serif);
+      font-size: 32px;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--text);
+      display: block;
+      margin-bottom: 16px;
+    }
 
     /* ── Footer ── */
-    .footer {
-      margin-top:64px;
-      border-top:1px solid var(--border);
-      padding-top:22px;
-      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
-      opacity:0; animation: up 0.5s 0.3s ease forwards;
+    footer {
+      margin-top: 80px;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      opacity: 0;
+      animation: fadeUp .6s .4s ease forwards;
     }
 
-    .footer-left {
-      font-family:var(--mono); font-size:10px; color:var(--muted);
-      letter-spacing:0.08em;
+    .footer-l {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: .1em;
     }
-    .footer-left strong { color:var(--vi2); }
+    .footer-l strong { color: var(--vi2); }
 
-    .footer-right a {
-      font-family:var(--mono); font-size:10px; color:var(--muted);
-      text-decoration:none; letter-spacing:0.06em;
-      transition:color 0.15s;
+    footer a {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      text-decoration: none;
+      letter-spacing: .1em;
+      transition: color .15s;
     }
-    .footer-right a:hover { color:var(--vi3); }
+    footer a:hover { color: var(--text); }
 
     /* ── Animations ── */
-    @keyframes up {
-      from { opacity:0; transform:translateY(10px); }
-      to   { opacity:1; transform:translateY(0); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 
     /* ── Responsive ── */
-    @media (max-width:500px) {
-      .page { padding:32px 16px 72px; }
-      .grid { grid-template-columns:repeat(auto-fill, minmax(88px, 1fr)); gap:7px; }
-      .syl-text { font-size:17px; }
+    @media (max-width: 700px) {
+      .vline { display: none; }
+      .page { padding: 0 20px 80px; }
+      .hero-name { font-size: clamp(52px, 14vw, 80px); }
+      .grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+      .words-panel-inner { grid-template-columns: 1fr; }
+      .words-panel-meta { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 24px; margin-bottom: 24px; }
     }
   </style>
 </head>
 <body>
 
-<div class="bg-glow bg-glow-1"></div>
-<div class="bg-glow bg-glow-2"></div>
+<!-- Lignes verticales décoratives -->
+<div class="vline vline-1"></div>
+<div class="vline vline-2"></div>
 
 <div class="page">
 
-  <!-- Topbar -->
-  <div class="topbar">
-    <div class="brand">
-      <div class="brand-icon">💣</div>
-      <span class="brand-name">TokiBot · BombParty</span>
+  <nav>
+    <span class="nav-brand">TokiBot · BombParty</span>
+    <div class="nav-right">
+      <span class="nav-lang" id="lang-badge">FR</span>
     </div>
-    <span class="lang-badge" id="lang-badge">FR</span>
-  </div>
+  </nav>
 
-  <!-- Content -->
   <div id="root"></div>
 
-  <!-- Footer -->
-  <div class="footer">
-    <span class="footer-left">Propulsé par <strong>TokiBot</strong></span>
-    <div class="footer-right"><a href="https://jklm.fun" target="_blank" rel="noopener">jklm.fun ↗</a></div>
-  </div>
+  <footer>
+    <span class="footer-l">Propulsé par <strong>TokiBot</strong></span>
+    <a href="https://jklm.fun" target="_blank" rel="noopener">jklm.fun ↗</a>
+  </footer>
 
 </div>
 
 <script>
 (function () {
-  const params = new URLSearchParams(window.location.search);
-  const nick   = decodeURIComponent(params.get('n') || '').trim();
-  const lang   = (params.get('lang') || 'fr').toLowerCase();
-  const rawS   = params.get('s') || '';
-  const syls   = rawS
+  const params   = new URLSearchParams(window.location.search);
+  const nick     = decodeURIComponent(params.get('n') || '').trim();
+  const lang     = (params.get('lang') || 'fr').toLowerCase();
+  const rawS     = params.get('s') || '';
+  // apibase permet de pointer vers le dict server local exposé publiquement
+  // ex: ?apibase=http://monserveur:7777
+  // Si absent, fallback sur l'API Anthropic (nécessite une clé exposée publiquement — non recommandé)
+  const apiBase  = (params.get('apibase') || '').replace(/\/$/, '');
+  const syls     = rawS
     ? decodeURIComponent(rawS).split(',').map(s => s.trim().toUpperCase()).filter(Boolean)
     : [];
 
-  // Lang badge
-  const lb = document.getElementById('lang-badge');
-  if (lb) lb.textContent = lang.toUpperCase();
+  document.getElementById('lang-badge').textContent = lang.toUpperCase();
 
   const root = document.getElementById('root');
 
   /* ── Empty state ── */
   if (!nick && syls.length === 0) {
-    root.innerHTML = `<div class="empty-state">
-      <span class="big">🔍</span>
-      <strong>Aucune donnée</strong>
-      Ce lien est généré par TokiBot à la fin d'une partie BombParty.
-    </div>`;
+    root.innerHTML = `
+      <div class="empty-state">
+        <p>Aucune donnée</p>
+        <strong>Ce lien est généré automatiquement<br>par TokiBot en fin de partie.</strong>
+      </div>`;
     return;
   }
 
-  /* ── Render ── */
+  /* ── Render hero + grille ── */
+  // Découpe le pseudo : dernière lettre en italique (effet editorial)
+  const nameParts = nick.length > 1
+    ? `${esc(nick.slice(0, -1))}<em>${esc(nick.slice(-1))}</em>`
+    : `<em>${esc(nick)}</em>`;
+
   root.innerHTML = `
     <div class="hero">
-      <p class="eyebrow">Récapitulatif · Syllabes ratées</p>
-      <div class="player-name"><span class="name-text">${esc(nick || 'Joueur')}</span></div>
-      <div class="meta-row">
-        <span class="chip">
-          <span class="chip-dot"></span>
-          <span class="chip-num">${syls.length}</span>
-          <span>syllabe${syls.length > 1 ? 's' : ''} ratée${syls.length > 1 ? 's' : ''}</span>
-        </span>
-        <span class="hint-text">Cliquer sur une syllabe pour voir des mots</span>
+      <p class="hero-label">Récapitulatif · Syllabes ratées</p>
+      <h1 class="hero-name">${nameParts}</h1>
+      <div class="hero-meta">
+        <div>
+          <div class="hero-count">${syls.length}</div>
+          <div class="hero-count-label">syllabe${syls.length > 1 ? 's' : ''} ratée${syls.length > 1 ? 's' : ''}</div>
+        </div>
+        <span class="hero-hint">↓ Cliquer sur une syllabe pour voir des mots</span>
       </div>
     </div>
 
-    <div class="search-wrap">
-      <input id="search" type="text" placeholder="Filtrer…" autocomplete="off" spellcheck="false" />
+    <div class="search-row">
+      <label for="search">Filtrer</label>
+      <input id="search" type="text" placeholder="Taper une syllabe…" autocomplete="off" spellcheck="false" />
     </div>
 
-    <div class="grid-wrap">
+    <div class="grid-section">
       <div class="grid" id="grid">
         ${syls.map((s, i) => `
-          <div class="syl-card" data-syl="${esc(s)}" style="animation-delay:${Math.min(i*28,500)}ms" tabindex="0">
+          <div class="syl-card" data-syl="${esc(s)}" style="animation-delay:${Math.min(i * 30, 600)}ms" tabindex="0">
             <span class="syl-text">${esc(s)}</span>
-            <span class="syl-len">${s.length} lettre${s.length>1?'s':''}</span>
+            <span class="syl-len">${s.length} lettre${s.length > 1 ? 's' : ''}</span>
           </div>`).join('')}
         <div class="no-results" id="no-results">Aucun résultat.</div>
       </div>
 
       <div id="words-panel">
         <div class="words-panel-inner">
-          <button class="words-panel-close" id="close-panel" title="Fermer">✕</button>
-          <div class="words-panel-title">
-            Mots contenant <span class="syl-label" id="panel-syl"></span>
+          <div class="words-panel-meta">
+            <div class="words-panel-tag">Mots contenant</div>
+            <div class="words-panel-syl" id="panel-syl"></div>
+            <button class="words-panel-close" id="close-panel">Fermer ✕</button>
           </div>
           <div id="panel-body"></div>
         </div>
@@ -473,7 +540,7 @@
 
   /* ── State ── */
   let activeCard = null;
-  let wordCache  = {};  // syl → words[]
+  const wordCache = {};
 
   /* ── Search ── */
   const input     = document.getElementById('search');
@@ -496,11 +563,8 @@
     const card = e.target.closest('.syl-card');
     if (!card) return;
     const syl = card.dataset.syl;
-
-    // Toggle
     if (activeCard === card && document.getElementById('words-panel').style.display !== 'none') {
-      closePanel();
-      return;
+      closePanel(); return;
     }
     selectCard(card, syl);
   });
@@ -515,30 +579,24 @@
   }
 
   function closePanel() {
-    const panel = document.getElementById('words-panel');
-    panel.style.display = 'none';
+    document.getElementById('words-panel').style.display = 'none';
     cards().forEach(c => c.classList.remove('active'));
     activeCard = null;
   }
 
   async function showPanel(syl) {
-    const panel    = document.getElementById('words-panel');
-    const panelSyl = document.getElementById('panel-syl');
-    const body     = document.getElementById('panel-body');
+    const panel  = document.getElementById('words-panel');
+    const sylEl  = document.getElementById('panel-syl');
+    const body   = document.getElementById('panel-body');
 
     panel.style.display = 'block';
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    panelSyl.textContent = syl;
+    sylEl.textContent = syl;
 
-    // Cache hit
-    if (wordCache[syl]) {
-      renderWords(body, syl, wordCache[syl]);
-      return;
-    }
+    if (wordCache[syl]) { renderWords(body, syl, wordCache[syl]); return; }
 
-    // Loading shimmer
     body.innerHTML = `<div class="shimmer">
-      ${[80,60,100,70,90].map(w=>`<div class="shimmer-chip" style="width:${w}px"></div>`).join('')}
+      ${[90,60,110,75,95,65,80].map(w => `<div class="shimmer-chip" style="width:${w}px"></div>`).join('')}
     </div>`;
 
     try {
@@ -546,59 +604,68 @@
       wordCache[syl] = words;
       renderWords(body, syl, words);
     } catch (err) {
-      body.innerHTML = `<span style="font-family:var(--mono);font-size:12px;color:var(--muted)">
-        Impossible de charger les mots.
-      </span>`;
+      body.innerHTML = `<span style="font-size:11px;color:var(--muted);letter-spacing:.06em">Impossible de charger les mots.</span>`;
     }
   }
 
   function renderWords(container, syl, words) {
     if (!words || words.length === 0) {
-      container.innerHTML = `<span style="font-family:var(--mono);font-size:12px;color:var(--muted)">Aucun mot trouvé.</span>`;
+      container.innerHTML = `<span style="font-size:11px;color:var(--muted);letter-spacing:.06em">Aucun mot trouvé.</span>`;
       return;
     }
+    const re = new RegExp(`(${esc(syl)})`, 'gi');
     container.innerHTML = `<div class="words-list">${
       words.map(w => {
-        const re = new RegExp(`(${esc(syl)})`, 'gi');
         const hi = esc(w).replace(re, '<span class="hl">$1</span>');
         return `<span class="word-chip">${hi}</span>`;
       }).join('')
     }</div>`;
   }
 
-  /* ── Fetch words via Claude API ── */
+  /* ── Fetch words ──
+   * Stratégie :
+   *  1. Si ?apibase=http://monserveur:7777 → appelle /search du dict server local (dictionnaire réel)
+   *  2. Sinon → appelle l'API Anthropic via le proxy Claude intégré (pas de clé requise)
+   */
   async function fetchWords(syl, lang) {
-    const langNames = { fr:'français', en:'anglais', de:'allemand', es:'espagnol', it:'italien' };
-    const langName  = langNames[lang] || 'français';
+    if (apiBase) {
+      // ── Dict server local ──────────────────────────────────────────────
+      const url  = `${apiBase}/search?syl=${encodeURIComponent(syl.toLowerCase())}&lang=${encodeURIComponent(lang)}&limit=15`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      return data.words || [];
+    } else {
+      // ── Fallback : API Anthropic via proxy (claude.ai artifacts) ──────
+      const langNames = { fr: 'français', en: 'anglais', de: 'allemand', es: 'espagnol', it: 'italien' };
+      const langName  = langNames[lang] || 'français';
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: `Tu es un assistant lexical pour le jeu BombParty. Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans explication. Format strict : {"words":["mot1","mot2","mot3","mot4","mot5"]}`,
-        messages: [{
-          role: 'user',
-          content: `Donne-moi exactement 5 mots en ${langName} qui contiennent la syllabe "${syl.toLowerCase()}". Les mots doivent être courants, simples, sans tiret ni espace. Respecte le format JSON demandé.`
-        }]
-      })
-    });
-
-    const data = await resp.json();
-    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-    const clean = text.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
-    return parsed.words || [];
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model:      'claude-sonnet-4-20250514',
+          max_tokens: 300,
+          system:     'Tu es un assistant lexical. Réponds UNIQUEMENT avec un JSON valide, sans markdown. Format: {"words":["mot1","mot2","mot3","mot4","mot5"]}',
+          messages: [{
+            role:    'user',
+            content: `Donne exactement 5 mots courants en ${langName} contenant la syllabe "${syl.toLowerCase()}". Sans tiret ni espace. JSON strict.`
+          }]
+        })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data  = await resp.json();
+      const text  = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+      const clean = text.replace(/```json|```/g, '').trim();
+      return JSON.parse(clean).words || [];
+    }
   }
 
-  /* ── Helpers ── */
   function esc(s) {
     return String(s)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-
 })();
 </script>
 </body>

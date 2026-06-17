@@ -72,6 +72,7 @@
     .syl-card.hidden { display:none; }
     .syl-t { font-size:22px; font-weight:500; letter-spacing:.04em; display:block; margin-bottom:8px; }
     .syl-l { font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+    .no-words { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:6px; }
     .no-res {
       display:none; padding:32px; font-size:11px; letter-spacing:.06em; color:var(--muted);
       border-right:1px solid var(--line); border-bottom:1px solid var(--line); grid-column:1/-1;
@@ -111,7 +112,6 @@
       .w { width:100%; padding:0 20px 80px; }
       .grid { grid-template-columns:repeat(3,1fr); }
       .hero-nick { font-size:52px; }
-      .panel-in { grid-template-columns:1fr; gap:24px; }
     }
   </style>
 </head>
@@ -131,16 +131,33 @@
   const syls = (p.get('s') ? decodeURIComponent(p.get('s')) : '')
     .split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
 
-  // Paramètre &w= : "CL:Clair,Clé,Incluant|RE:Rêve,Secret,Libre"
+  // ── Décoder le hash Base64 (mots) ────────────────────────────────────────
+  // Nouveau format : #<base64(JSON)> généré par statshandler.js
+  // Ancien format  : &w=SYL:mot1,mot2|SYL2:... (rétrocompat)
   const wordsMap = {};
-  const wParam = p.get('w') ? decodeURIComponent(p.get('w')) : '';
-  if (wParam) {
-    for (const chunk of wParam.split('|')) {
-      const idx = chunk.indexOf(':');
-      if (idx === -1) continue;
-      const syl   = chunk.slice(0, idx).toUpperCase();
-      const words = chunk.slice(idx + 1).split(',').map(w => w.trim()).filter(Boolean);
-      if (words.length) wordsMap[syl] = words;
+
+  const hash = location.hash.slice(1); // enlever le '#'
+  if (hash) {
+    try {
+      const json = decodeURIComponent(escape(atob(hash)));
+      const obj  = JSON.parse(json);
+      for (const [syl, words] of Object.entries(obj)) {
+        if (Array.isArray(words) && words.length) wordsMap[syl.toUpperCase()] = words;
+      }
+    } catch (_) {}
+  }
+
+  // Rétrocompat ancien format &w=
+  if (!Object.keys(wordsMap).length) {
+    const wParam = p.get('w') ? decodeURIComponent(p.get('w')) : '';
+    if (wParam) {
+      for (const chunk of wParam.split('|')) {
+        const idx = chunk.indexOf(':');
+        if (idx === -1) continue;
+        const syl   = chunk.slice(0, idx).toUpperCase();
+        const words = chunk.slice(idx + 1).split(',').map(w => w.trim()).filter(Boolean);
+        if (words.length) wordsMap[syl] = words;
+      }
     }
   }
 
@@ -151,6 +168,8 @@
     root.innerHTML = `<div class="empty"><p>Aucune donnée</p><strong>Ce lien est généré automatiquement par TokiBot en fin de partie.</strong></div>`;
     return;
   }
+
+  const hasWords = syl => !!(wordsMap[syl] && wordsMap[syl].length);
 
   root.innerHTML = `
     <div class="hero">
@@ -166,6 +185,7 @@
           <div class="syl-card" data-syl="${esc(s)}" style="animation-delay:${Math.min(i*25,500)}ms">
             <span class="syl-t">${esc(s)}</span>
             <span class="syl-l">${s.length} lettre${s.length>1?'s':''}</span>
+            ${hasWords(s) ? '' : '<span class="no-words">—</span>'}
           </div>`).join('')}
         <div class="no-res" id="no-res">Aucun résultat.</div>
       </div>
@@ -211,8 +231,6 @@
   function openPanel(syl) {
     const panel = document.getElementById('panel');
     const body  = document.getElementById('p-body');
-    // NOTE: ligne "document.getElementById('p-syl').textContent = syl" supprimée
-    // — l'élément #p-syl n'existe pas dans le template et faisait planter openPanel
     panel.style.display = 'block';
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 

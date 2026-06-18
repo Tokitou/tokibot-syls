@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako_inflate.min.js"></script>
   <style>
     :root {
       --bg:    #08070f;
@@ -21,9 +22,7 @@
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     html { scroll-behavior: smooth; }
     body { background:var(--bg); color:var(--text); font-family:var(--f); min-height:100vh; -webkit-font-smoothing:antialiased; }
-
     .w { width:760px; margin:0 auto; padding-bottom:100px; }
-
     header {
       display:flex; align-items:center; justify-content:space-between;
       padding:28px 0; border-bottom:1px solid var(--line);
@@ -31,7 +30,6 @@
     }
     .h-brand { font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
     .h-lang  { font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); padding:4px 10px; }
-
     .hero {
       padding:56px 0 44px; border-bottom:1px solid var(--line);
       opacity:0; animation:up .5s .08s ease forwards;
@@ -40,18 +38,13 @@
     .hero-meta { display:flex; align-items:baseline; gap:40px; }
     .hero-count { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
     .hero-count em { display:block; font-size:36px; font-weight:300; font-style:italic; letter-spacing:-.02em; color:var(--vi2); margin-bottom:4px; }
-
-    .search {
-      border-bottom:1px solid var(--line);
-      opacity:0; animation:up .5s .14s ease forwards;
-    }
+    .search { border-bottom:1px solid var(--line); opacity:0; animation:up .5s .14s ease forwards; }
     .search input {
       width:100%; background:none; border:none; outline:none;
       font-family:var(--f); font-size:13px; letter-spacing:.06em;
       color:var(--text); padding:18px 0;
     }
     .search input::placeholder { color:var(--muted); }
-
     .grid-wrap { opacity:0; animation:up .5s .2s ease forwards; }
     .grid {
       display:grid; grid-template-columns:repeat(5,1fr);
@@ -69,28 +62,24 @@
       content:''; position:absolute; bottom:0; left:0; right:0;
       height:2px; background:var(--vi);
     }
+    .syl-card.no-words { opacity:.45; cursor:default; }
+    .syl-card.no-words:hover { background:transparent; }
     .syl-card.hidden { display:none; }
     .syl-t { font-size:22px; font-weight:500; letter-spacing:.04em; display:block; margin-bottom:8px; }
     .syl-l { font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
-    .no-words { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-top:6px; }
     .no-res {
       display:none; padding:32px; font-size:11px; letter-spacing:.06em; color:var(--muted);
       border-right:1px solid var(--line); border-bottom:1px solid var(--line); grid-column:1/-1;
     }
-
     #panel { display:none; border-bottom:1px solid var(--line); }
-    .panel-in {
-      padding:24px 0; display:flex; align-items:flex-start; gap:16px;
-    }
+    .panel-in { padding:24px 0; display:flex; align-items:flex-start; gap:16px; }
     .panel-in #p-body { flex:1; }
     .p-close {
       background:none; border:1px solid var(--line); cursor:pointer;
       font-family:var(--f); font-size:11px;
-      color:var(--muted); padding:5px 9px; transition:color .15s, border-color .15s;
-      flex-shrink:0;
+      color:var(--muted); padding:5px 9px; transition:color .15s, border-color .15s; flex-shrink:0;
     }
     .p-close:hover { color:var(--text); border-color:var(--muted); }
-
     .words { display:flex; flex-wrap:wrap; gap:6px; align-content:start; }
     .word {
       font-size:12px; letter-spacing:.04em; color:var(--text);
@@ -98,16 +87,12 @@
     }
     .word:hover { border-color:var(--muted); }
     .word .hl { color:var(--vi2); font-weight:500; }
-
     .err { font-size:11px; letter-spacing:.06em; color:var(--muted); }
-
     .empty { padding:80px 0; border-top:1px solid var(--line); }
     .empty p { font-size:11px; letter-spacing:.1em; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
     .empty strong { font-size:24px; font-weight:300; color:var(--text); display:block; }
-
     @keyframes up { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
     @keyframes fi { from{opacity:0} to{opacity:1} }
-
     @media (max-width:820px) {
       .w { width:100%; padding:0 20px 80px; }
       .grid { grid-template-columns:repeat(3,1fr); }
@@ -131,23 +116,35 @@
   const syls = (p.get('s') ? decodeURIComponent(p.get('s')) : '')
     .split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
 
-  // ── Décoder le hash Base64 (mots) ────────────────────────────────────────
-  // Nouveau format : #<base64(JSON)> généré par statshandler.js
-  // Ancien format  : &w=SYL:mot1,mot2|SYL2:... (rétrocompat)
+  // ── Décoder le hash ───────────────────────────────────────────────────────
+  // Nouveau format : #<deflateRaw+base64url> (pako)
+  // Ancien format  : #<base64(JSON)> ou &w=SYL:mots|... (rétrocompat)
   const wordsMap = {};
+  const hash = location.hash.slice(1);
 
-  const hash = location.hash.slice(1); // enlever le '#'
   if (hash) {
+    // Essai 1 : deflateRaw + base64url (nouveau format — pako)
     try {
-      const json = decodeURIComponent(escape(atob(hash)));
+      const b64 = hash.replace(/-/g, '+').replace(/_/g, '/');
+      const bin = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const json = new TextDecoder().decode(pako.inflateRaw(bin));
       const obj  = JSON.parse(json);
       for (const [syl, words] of Object.entries(obj)) {
         if (Array.isArray(words) && words.length) wordsMap[syl.toUpperCase()] = words;
       }
-    } catch (_) {}
+    } catch (_) {
+      // Essai 2 : base64 simple (ancien format)
+      try {
+        const json = decodeURIComponent(escape(atob(hash)));
+        const obj  = JSON.parse(json);
+        for (const [syl, words] of Object.entries(obj)) {
+          if (Array.isArray(words) && words.length) wordsMap[syl.toUpperCase()] = words;
+        }
+      } catch (_) {}
+    }
   }
 
-  // Rétrocompat ancien format &w=
+  // Rétrocompat &w=
   if (!Object.keys(wordsMap).length) {
     const wParam = p.get('w') ? decodeURIComponent(p.get('w')) : '';
     if (wParam) {
@@ -182,10 +179,9 @@
     <div class="grid-wrap">
       <div class="grid" id="grid">
         ${syls.map((s,i) => `
-          <div class="syl-card" data-syl="${esc(s)}" style="animation-delay:${Math.min(i*25,500)}ms">
+          <div class="syl-card${hasWords(s)?'':' no-words'}" data-syl="${esc(s)}" style="animation-delay:${Math.min(i*25,500)}ms">
             <span class="syl-t">${esc(s)}</span>
             <span class="syl-l">${s.length} lettre${s.length>1?'s':''}</span>
-            ${hasWords(s) ? '' : '<span class="no-words">—</span>'}
           </div>`).join('')}
         <div class="no-res" id="no-res">Aucun résultat.</div>
       </div>
@@ -212,7 +208,7 @@
 
   document.getElementById('grid').addEventListener('click', e => {
     const c = e.target.closest('.syl-card');
-    if (!c) return;
+    if (!c || c.classList.contains('no-words')) return;
     if (active === c && document.getElementById('panel').style.display !== 'none') { close(); return; }
     document.querySelectorAll('.syl-card').forEach(x => x.classList.remove('active'));
     c.classList.add('active');
@@ -233,7 +229,6 @@
     const body  = document.getElementById('p-body');
     panel.style.display = 'block';
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
     const words = wordsMap[syl];
     if (words && words.length) {
       render(body, syl, words);
